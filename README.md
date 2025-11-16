@@ -5,6 +5,12 @@
 ### market_analysis_simple.py
 병렬처리, 캐시 등의 최적화 기능을 제거하고 핵심 기능만 남긴 단순화된 버전입니다.
 
+### test_market_analysis.py
+지정된 200개 코스피 종목으로 시장 분석 로직을 검증하는 테스트 코드입니다.
+- 테스트 기간: 2024년 4월 1일 ~ 2024년 6월 3일
+- 테스트 종목: 200개 지정 코스피 종목
+- 자동 검증: 과매수/과매도 계산 로직, 비율 합계, 평균 계산 등
+
 ## 주요 변경사항
 
 ### 제거된 기능
@@ -66,6 +72,8 @@ df = stock.get_index_ohlcv(...)
 
 ## 사용 방법
 
+### 메인 프로그램 실행
+
 ```python
 from market_analysis_simple import MarketConfig, KoreaMarketDataPipeline
 
@@ -80,6 +88,24 @@ config = MarketConfig(
 pipeline = KoreaMarketDataPipeline(config)
 pipeline.run()
 ```
+
+### 테스트 코드 실행
+
+```bash
+# 테스트 실행
+python test_market_analysis.py
+```
+
+테스트 코드는 다음을 수행합니다:
+1. 200개 지정 종목의 종목코드 자동 수집
+2. 2024년 4월 1일 ~ 6월 3일 데이터 수집
+3. 시장 분석 수행
+4. 계산 로직 자동 검증
+   - 거래량 비율 합계 = 1 검증
+   - 포인트 비율 합계 = 1 검증
+   - 평균 = (상승거래량% + 상승포인트%) / 2 검증
+   - 과매수/과매도 = max(평균, 평균.1) 검증
+5. 결과를 엑셀 파일로 저장 (`테스트_코스피_SIO_YYYYMMDD_HHMMSS.xlsx`)
 
 ## 출력 파일
 
