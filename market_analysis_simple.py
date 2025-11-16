@@ -243,34 +243,38 @@ class MarketAnalyzer:
             gain_vals = gain_df[stock_cols].iloc[i]
             lost_vals = lost_df[stock_cols].iloc[i]
 
-            # 거래량 합계
+            # 거래량 및 포인트 합산
             upside_sum = upside_vals.sum()
             downside_sum = downside_vals.sum()
+            points_gained = gain_vals.sum()
+            points_lost = lost_vals.sum()
+
             volume_list.append(upside_sum)
             volume1_list.append(downside_sum)
+            gained_list.append(points_gained)
+            lost_list.append(points_lost)
 
             # 과매수/과매도 계산
-            traded_stocks = (upside_vals + downside_vals) > 0
-            num_traded = traded_stocks.sum()
+            total_vol = upside_sum + downside_sum
+            total_points = points_gained + points_lost
 
-            if num_traded > 0:
-                up_count = (upside_vals > 0).sum()
-                down_count = (downside_vals > 0).sum()
+            if total_vol > 0 and total_points > 0:
+                # 긍정적 지표 계산 (상승)
+                positive_vol_percentage = upside_sum / total_vol
+                positive_points_percentage = points_gained / total_points
+                positive_average = (positive_vol_percentage + positive_points_percentage) / 2
 
-                total_volume = upside_sum + downside_sum
-                if total_volume > 0:
-                    # 거래량 가중 계산
-                    overbought_oversold = (downside_sum - upside_sum) / total_volume * 1.2
-                else:
-                    overbought_oversold = np.nan
+                # 부정적 지표 계산 (하락)
+                negative_vol_percentage = downside_sum / total_vol
+                negative_points_percentage = points_lost / total_points
+                negative_average = (negative_vol_percentage + negative_points_percentage) / 2
+
+                # 과매수/과매도: 둘 중 큰 값
+                overbought_oversold = positive_average if positive_average > negative_average else negative_average
             else:
                 overbought_oversold = np.nan
 
             overbought_oversold_list.append(overbought_oversold)
-
-            # 포인트 합계
-            gained_list.append(gain_vals.sum())
-            lost_list.append(lost_vals.sum())
 
         # 계산된 값 할당
         result["Volume"] = volume_list
@@ -283,19 +287,6 @@ class MarketAnalyzer:
         total_vol = result["Volume"] + result["Volume.1"]
         total_points = result["gained"] + result["Lost"]
 
-        # 평균 계산
-        result["평균"] = np.where(
-            result["과매수/과매도"] < 0,
-            (1 + result["과매수/과매도"]) / 2,
-            result["과매수/과매도"],
-        )
-
-        result["평균.1"] = np.where(
-            result["과매수/과매도"] < 0,
-            np.abs(result["과매수/과매도"]),
-            1 - result["과매수/과매도"],
-        )
-
         # 거래량 비율
         result["+VOL%"] = np.where(total_vol > 0, result["Volume"] / total_vol, 0)
         result["-VOL%"] = np.where(total_vol > 0, result["Volume.1"] / total_vol, 0)
@@ -303,6 +294,10 @@ class MarketAnalyzer:
         # 포인트 비율
         result["+POINTS%"] = np.where(total_points > 0, result["gained"] / total_points, 0)
         result["-POINTS%"] = np.where(total_points > 0, result["Lost"] / total_points, 0)
+
+        # 평균 계산
+        result["평균"] = (result["+VOL%"] + result["+POINTS%"]) / 2
+        result["평균.1"] = (result["-VOL%"] + result["-POINTS%"]) / 2
 
         return result
 
