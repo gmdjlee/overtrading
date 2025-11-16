@@ -256,7 +256,7 @@ class MarketAnalyzer:
 
             # 과매수/과매도 계산
             total_vol = upside_sum + downside_sum
-            total_points = points_gained + points_lost
+            total_points = points_gained + abs(points_lost)  # 절대값 사용
 
             if total_vol > 0 and total_points > 0:
                 # 긍정적 지표 계산 (상승)
@@ -266,11 +266,14 @@ class MarketAnalyzer:
 
                 # 부정적 지표 계산 (하락)
                 negative_vol_percentage = downside_sum / total_vol
-                negative_points_percentage = points_lost / total_points
+                negative_points_percentage = abs(points_lost) / total_points  # 절대값 사용
                 negative_average = (negative_vol_percentage + negative_points_percentage) / 2
 
-                # 과매수/과매도: 둘 중 큰 값
-                overbought_oversold = positive_average if positive_average > negative_average else negative_average
+                # 과매수/과매도: 상승이 우세하면 양수, 하락이 우세하면 음수
+                if positive_average > negative_average:
+                    overbought_oversold = positive_average
+                else:
+                    overbought_oversold = -negative_average
             else:
                 overbought_oversold = np.nan
 
@@ -285,7 +288,7 @@ class MarketAnalyzer:
 
         # 파생 지표 계산
         total_vol = result["Volume"] + result["Volume.1"]
-        total_points = result["gained"] + result["Lost"]
+        total_points = result["gained"] + result["Lost"].abs()  # 절대값 사용
 
         # 거래량 비율
         result["+VOL%"] = np.where(total_vol > 0, result["Volume"] / total_vol, 0)
@@ -293,7 +296,7 @@ class MarketAnalyzer:
 
         # 포인트 비율
         result["+POINTS%"] = np.where(total_points > 0, result["gained"] / total_points, 0)
-        result["-POINTS%"] = np.where(total_points > 0, result["Lost"] / total_points, 0)
+        result["-POINTS%"] = np.where(total_points > 0, result["Lost"].abs() / total_points, 0)  # 절대값 사용
 
         # 평균 계산
         result["평균"] = (result["+VOL%"] + result["+POINTS%"]) / 2
